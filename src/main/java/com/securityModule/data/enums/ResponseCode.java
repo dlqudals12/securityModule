@@ -1,0 +1,12 @@
+package com.securityModule.data.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum ResponseCode {
+    DATA_NOT_FOUND(404, "Data not found");
+    private final int code;
+    private final String msg;
+}
