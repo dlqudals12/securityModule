@@ -1,4 +1,4 @@
-package com.securityModule.util.properties;
+package com.securityModule.global.properties;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

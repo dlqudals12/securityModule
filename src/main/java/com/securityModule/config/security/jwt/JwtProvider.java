@@ -2,15 +2,15 @@ package com.securityModule.config.security.jwt;
 
 import com.securityModule.data.dto.user.CustomUserDetail;
 import com.securityModule.data.enums.JwtTokenType;
-import com.securityModule.util.properties.JwtProperties;
-import com.securityModule.util.properties.JwtTokenProperties;
+import com.securityModule.global.properties.JwtProperties;
+import com.securityModule.global.properties.JwtTokenProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -32,24 +32,29 @@ public class JwtProvider {
     private final JwtTokenProperties jwtTokenProperties;
     private final JwtProperties jwtProperties;
 
+    public record JwtTokenDto(String token, JwtTokenType tokenType, long expire) {
+    }
+
     @PostConstruct
     public void init() {
         byte[] bytes = DatatypeConverter.parseBase64Binary(jwtProperties.getSecretKey());
         SECRET_KEY = new SecretKeySpec(bytes, SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String generate(CustomUserDetail user, JwtTokenType tokenType) {
+    public JwtTokenDto generate(CustomUserDetail user, JwtTokenType tokenType) {
         long now = System.currentTimeMillis();
 
         long expire = tokenType == JwtTokenType.ACCESS
                 ? jwtTokenProperties.getAccess() : jwtTokenProperties.getRefresh();
 
-        return Jwts.builder()
+        String token = Jwts.builder()
                 .setClaims(createClaims(user))
                 .setSubject(user.getUserId())
                 .setExpiration(new Date(now + expire))
                 .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
                 .compact();
+
+        return new JwtTokenDto(token, tokenType, expire);
     }
 
     public String getToken(HttpServletRequest request, JwtTokenType jwtTokenType) {
@@ -63,13 +68,31 @@ public class JwtProvider {
     }
 
     public boolean validAccess(String token) {
-        Claims claims = getClaims(token);
+        boolean isValid;
+        try {
+            Claims claims = getClaims(token);
 
-        if (claims == null) {
-            throw new UnsupportedJwtException("TOKEN EXPIRED");
+            isValid = claims != null;
+        } catch (Exception e) {
+            isValid = false;
         }
 
-        return true;
+        return isValid;
+    }
+
+    public boolean validRefresh(CustomUserDetail user, HttpServletRequest request, HttpServletResponse response) {
+        boolean isValid;
+
+        try {
+            String token = getToken(request, JwtTokenType.REFRESH);
+            Claims claims = getClaims(token);
+
+            isValid = claims != null;
+        } catch (Exception e) {
+            isValid = false;
+        }
+
+        return isValid;
     }
 
     public Authentication getAuthentication(String token) {
@@ -96,5 +119,4 @@ public class JwtProvider {
         claims.put("roles", roles);
         return claims;
     }
-
 }

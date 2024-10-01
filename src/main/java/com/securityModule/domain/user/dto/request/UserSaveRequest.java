@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NonNull;
 
 @Getter
-public class UserSaveRequests {
+public class UserSaveRequest {
     @NonNull
     private String id;
 
