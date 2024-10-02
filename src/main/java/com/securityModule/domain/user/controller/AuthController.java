@@ -5,6 +5,7 @@ import com.securityModule.data.dto.user.CustomUserDetail;
 import com.securityModule.domain.user.dto.request.UserLoginRequest;
 import com.securityModule.domain.user.dto.request.UserSaveRequest;
 import com.securityModule.domain.user.service.UserService;
+import com.securityModule.global.util.CookieUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -51,4 +52,12 @@ public class AuthController {
         userService.refresh(request, response);
         return SuccessResponse.ok();
     }
+
+    @Operation(summary = "로그아웃", description = "로그아웃")
+    @PostMapping("/logout")
+    public SuccessResponse<Object> logout(HttpServletResponse response) {
+        CookieUtils.deleteTokenCookies(response);
+        return SuccessResponse.ok();
+    }
+
 }

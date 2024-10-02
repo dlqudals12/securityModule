@@ -1,14 +1,14 @@
 package com.securityModule.global.properties;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.stereotype.Component;
 
 @ConfigurationProperties("jwt")
 @Getter
-@Validated
-@RequiredArgsConstructor
+@Setter
+@Component
 public class JwtProperties {
-    private final String secretKey;
+    private String secretKey;
 }

@@ -8,9 +8,7 @@ import com.securityModule.data.repository.user.UserRepository;
 import com.securityModule.domain.user.dto.request.UserLoginRequest;
 import com.securityModule.domain.user.dto.request.UserSaveRequest;
 import com.securityModule.global.exception.DataNotFountException;
-import com.securityModule.global.util.AuthUtil;
 import com.securityModule.global.util.CookieUtils;
-import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -46,29 +44,36 @@ public class UserService {
     }
 
     public CustomUserDetail login(UserLoginRequest userLoginRequest, HttpServletResponse response) throws AuthenticationException {
-        try {
-            User user = userRepository.findByUserId(userLoginRequest.getId()).orElseThrow(DataNotFountException::new);
+//        try {
+//            User user = userRepository.findByUserId(userLoginRequest.getId()).orElseThrow(DataNotFountException::new);
+//
+//            if (!encoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
+//                throw new AuthenticationException();
+//            }
+//
+//            CustomUserDetail customUserDetail = new CustomUserDetail(user);
+//
+//            createTokenCookie(customUserDetail, response);
+//
+//            return customUserDetail;
+//        } catch (Exception e) {
+//            throw new AuthenticationException();
+//        }
+        User user = userRepository.findByUserId(userLoginRequest.getId()).orElseThrow(DataNotFountException::new);
 
-            if (!encoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
-                throw new AuthenticationException();
-            }
-
-            CustomUserDetail customUserDetail = new CustomUserDetail(user);
-
-            createTokenCookie(customUserDetail, response);
-
-            return customUserDetail;
-        } catch (Exception e) {
+        if (!encoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
             throw new AuthenticationException();
         }
+
+        CustomUserDetail customUserDetail = new CustomUserDetail(user);
+
+        createTokenCookie(customUserDetail, response);
+
+        return customUserDetail;
     }
 
     public void refresh(HttpServletRequest request, HttpServletResponse response) {
-        CustomUserDetail user = AuthUtil.authentication();
-
-        if (!jwtProvider.validRefresh(user, request, response)) {
-            throw new UnsupportedJwtException("ExpiredToken");
-        }
+        CustomUserDetail user = jwtProvider.validRefresh(request, response);
 
         createTokenCookie(user, response);
     }

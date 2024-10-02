@@ -4,9 +4,11 @@ import com.securityModule.data.dto.user.CustomUserDetail;
 import com.securityModule.data.enums.JwtTokenType;
 import com.securityModule.global.properties.JwtProperties;
 import com.securityModule.global.properties.JwtTokenProperties;
+import com.securityModule.global.util.CookieUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,6 +62,8 @@ public class JwtProvider {
     public String getToken(HttpServletRequest request, JwtTokenType jwtTokenType) {
         Cookie[] cookies = request.getCookies();
 
+        if (cookies == null) return null;
+
         return Arrays.stream(cookies)
                 .filter(cookie -> cookie.getName().equals(jwtTokenType.getValue()))
                 .map(Cookie::getValue)
@@ -73,6 +77,8 @@ public class JwtProvider {
             Claims claims = getClaims(token);
 
             isValid = claims != null;
+
+            //redis 추가시 token 맞지 않으면 오류 후 로그아웃
         } catch (Exception e) {
             isValid = false;
         }
@@ -80,19 +86,28 @@ public class JwtProvider {
         return isValid;
     }
 
-    public boolean validRefresh(CustomUserDetail user, HttpServletRequest request, HttpServletResponse response) {
+    public CustomUserDetail validRefresh(HttpServletRequest request, HttpServletResponse response) {
         boolean isValid;
+        CustomUserDetail customUserDetail = null;
 
         try {
             String token = getToken(request, JwtTokenType.REFRESH);
             Claims claims = getClaims(token);
 
             isValid = claims != null;
+
+            customUserDetail = new CustomUserDetail(claims);
         } catch (Exception e) {
             isValid = false;
         }
 
-        return isValid;
+        if (!isValid) {
+            CookieUtils.deleteTokenCookies(response);
+
+            throw new UnsupportedJwtException("Expired token");
+        }
+
+        return customUserDetail;
     }
 
     public Authentication getAuthentication(String token) {

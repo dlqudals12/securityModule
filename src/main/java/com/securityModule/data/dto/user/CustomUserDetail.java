@@ -40,7 +40,6 @@ public class CustomUserDetail implements UserDetails {
     }
 
     public CustomUserDetail(User user) {
-        UserRoleType userRole = user.getRole();
         this.id = user.getId();
         this.userId = user.getUserId();
         this.password = user.getUserName();

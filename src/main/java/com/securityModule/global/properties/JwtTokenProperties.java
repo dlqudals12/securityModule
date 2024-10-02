@@ -1,15 +1,15 @@
 package com.securityModule.global.properties;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.stereotype.Component;
 
 @ConfigurationProperties("jwt.token")
 @Getter
-@Validated
-@RequiredArgsConstructor
+@Setter
+@Component
 public class JwtTokenProperties {
-    private final Long access;
-    private final Long refresh;
+    private Long access;
+    private Long refresh;
 }
