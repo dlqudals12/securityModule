@@ -12,6 +12,7 @@ import com.securityModule.global.util.CookieUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.naming.AuthenticationException;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserService {
 
@@ -44,32 +46,25 @@ public class UserService {
     }
 
     public CustomUserDetail login(UserLoginRequest userLoginRequest, HttpServletResponse response) throws AuthenticationException {
-//        try {
-//            User user = userRepository.findByUserId(userLoginRequest.getId()).orElseThrow(DataNotFountException::new);
-//
-//            if (!encoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
-//                throw new AuthenticationException();
-//            }
-//
-//            CustomUserDetail customUserDetail = new CustomUserDetail(user);
-//
-//            createTokenCookie(customUserDetail, response);
-//
-//            return customUserDetail;
-//        } catch (Exception e) {
-//            throw new AuthenticationException();
-//        }
-        User user = userRepository.findByUserId(userLoginRequest.getId()).orElseThrow(DataNotFountException::new);
+        try {
+            User user = userRepository.findByUserId(userLoginRequest.getId()).orElseThrow(DataNotFountException::new);
 
-        if (!encoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
+            if (!encoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
+                throw new AuthenticationException();
+            }
+
+            CustomUserDetail customUserDetail = new CustomUserDetail(user);
+
+            createTokenCookie(customUserDetail, response);
+
+            return customUserDetail;
+        } catch (Exception e) {
+            if (e instanceof AuthenticationException) {
+                log.debug("PASSWORD ERROR -> id: {}", userLoginRequest.getId());
+            }
+
             throw new AuthenticationException();
         }
-
-        CustomUserDetail customUserDetail = new CustomUserDetail(user);
-
-        createTokenCookie(customUserDetail, response);
-
-        return customUserDetail;
     }
 
     public void refresh(HttpServletRequest request, HttpServletResponse response) {
