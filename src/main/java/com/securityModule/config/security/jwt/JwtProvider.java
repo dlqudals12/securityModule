@@ -3,17 +3,14 @@ package com.securityModule.config.security.jwt;
 import com.securityModule.data.dto.user.CustomUserDetail;
 import com.securityModule.data.enums.JwtTokenType;
 import com.securityModule.global.properties.JwtProperties;
-import com.securityModule.global.properties.JwtTokenProperties;
 import com.securityModule.global.util.CookieUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -27,28 +24,34 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
 public class JwtProvider {
 
-    private static Key SECRET_KEY;
-    private final JwtTokenProperties jwtTokenProperties;
-    private final JwtProperties jwtProperties;
+    private final Key SECRET_KEY;
+    private final JwtProperties.JwtToken jwtTokenProperties;
 
     public record JwtTokenDto(String token, JwtTokenType tokenType, long expire) {
     }
 
-    @PostConstruct
-    public void init() {
+    public JwtProvider(JwtProperties jwtProperties) {
+        this.jwtTokenProperties = jwtProperties.getToken();
+
+        //secret key 생성
         byte[] bytes = DatatypeConverter.parseBase64Binary(jwtProperties.getSecretKey());
-        SECRET_KEY = new SecretKeySpec(bytes, SignatureAlgorithm.HS256.getJcaName());
+        this.SECRET_KEY = new SecretKeySpec(bytes, SignatureAlgorithm.HS256.getJcaName());
     }
 
+    /**
+     * jwt 토큰 생성
+     */
     public JwtTokenDto generate(CustomUserDetail user, JwtTokenType tokenType) {
+        //현재 시간
         long now = System.currentTimeMillis();
 
+        //토큰 타입마다 만료시간
         long expire = tokenType == JwtTokenType.ACCESS
-                ? jwtTokenProperties.getAccess() : jwtTokenProperties.getRefresh();
+                ? jwtTokenProperties.access() : jwtTokenProperties.refresh();
 
+        //token 생성
         String token = Jwts.builder()
                 .setClaims(createClaims(user))
                 .setSubject(user.getUserId())
@@ -56,9 +59,13 @@ public class JwtProvider {
                 .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
                 .compact();
 
+        //token return
         return new JwtTokenDto(token, tokenType, expire);
     }
 
+    /**
+     * request 에서 token 추출
+     */
     public String getToken(HttpServletRequest request, JwtTokenType jwtTokenType) {
         Cookie[] cookies = request.getCookies();
 
@@ -71,6 +78,9 @@ public class JwtProvider {
                 .orElse("");
     }
 
+    /**
+     * access token validation
+     */
     public boolean validAccess(String token) {
         boolean isValid;
         try {
@@ -86,6 +96,9 @@ public class JwtProvider {
         return isValid;
     }
 
+    /**
+     * access token refresh
+     */
     public CustomUserDetail validRefresh(HttpServletRequest request, HttpServletResponse response) {
         boolean isValid;
         CustomUserDetail customUserDetail = null;
@@ -110,12 +123,18 @@ public class JwtProvider {
         return customUserDetail;
     }
 
+    /**
+     * token 정보 조회
+     */
     public Authentication getAuthentication(String token) {
         Claims claims = getClaims(token);
         CustomUserDetail user = new CustomUserDetail(claims);
         return new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities());
     }
 
+    /**
+     * 토큰 정보 추출
+     */
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(SECRET_KEY)
@@ -124,6 +143,9 @@ public class JwtProvider {
                 .getBody();
     }
 
+    /**
+     * claim 생성
+     */
     private Map<String, Object> createClaims(CustomUserDetail user) {
         HashMap<String, Object> claims = new HashMap<>();
         String roles = String.join(",", user.getRoles().stream().map(Enum::toString).toList());

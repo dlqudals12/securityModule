@@ -11,4 +11,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtProperties {
     private String secretKey;
+    private JwtToken token;
+
+    public record JwtToken(Long access, Long refresh) {
+    }
 }

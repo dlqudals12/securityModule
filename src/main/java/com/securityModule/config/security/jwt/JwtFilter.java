@@ -19,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
+    //필터 제외 url
     public String[] excludeURI = {
 
     };
@@ -29,7 +30,9 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = jwtProvider.getToken(request, JwtTokenType.ACCESS);
 
+        //token validation
         if (StringUtils.hasText(token) && jwtProvider.validAccess(token)) {
+            //validation 통과하면 context에 authentication 정보 저장
             Authentication authentication = jwtProvider.getAuthentication(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
@@ -37,6 +40,9 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * 필터 제외 url 체크
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         return List.of(excludeURI).contains(request.getRequestURI());

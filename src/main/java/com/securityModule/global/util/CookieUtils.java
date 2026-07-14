@@ -9,6 +9,7 @@ public class CookieUtils {
 
     private static final String cookiePath = "/";
 
+    //token cookie 생성
     public static void createTokenCookies(JwtProvider.JwtTokenDto tokenDto, HttpServletResponse response) {
         Cookie cookie = new Cookie(tokenDto.tokenType().getValue(), tokenDto.token());
         cookie.setPath(cookiePath);
@@ -18,11 +19,13 @@ public class CookieUtils {
         response.addCookie(cookie);
     }
 
+    //token cookie 삭제
     public static void deleteTokenCookies(HttpServletResponse response) {
         deleteCookie(JwtTokenType.REFRESH.getValue(), response);
         deleteCookie(JwtTokenType.ACCESS.getValue(), response);
     }
 
+    //cookie 삭제
     public static void deleteCookie(String name, HttpServletResponse response) {
         Cookie cookie = new Cookie(name, "");
         cookie.setPath(cookiePath);
